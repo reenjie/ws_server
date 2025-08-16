@@ -6,17 +6,14 @@ import $ from 'jquery';
 
 var received_data ;
 
-const socket = new WebSocket('ws://localhost:3001','moneyheist');
+const socket = new WebSocket('ws://localhost:3001');
 
-/*   socket.addEventListener('open',function(event){
-   //socket.send('hd');
-  }); */
 
-  socket.addEventListener('message',function(event){
-  //received_data =JSON.parse(event.data);
-    window.location.reload(false);   
-  // $('#al').append('<div className="alert alert-danger">Data changed!</div>');
-   });
+  // socket.addEventListener('message',function(event){
+ 
+  //   window.location.reload(false);   
+ 
+  //  });
 
 
  
@@ -32,14 +29,10 @@ const [uid,setUid] = useState('');
 
   const [action,setAction] = useState('');
 
-  //Make an effect . that checks if there are or changes or none!
-
-
-  
- 
    useEffect(()=>{
      Axios.get("http://localhost:3001/view").then((req)=>{
-      setAllnames(req.data);
+     // setAllnames(req.data ?? []);
+      
       });
   },[]);  
 
@@ -48,7 +41,7 @@ const [uid,setUid] = useState('');
 
 
   const sendmessage = () =>{
-    
+   
     socket.send(messages); 
     setMessage('');
     $('#txtmsg').val('');
@@ -197,7 +190,7 @@ const cancel = ()=>{
   </thead>
   <tbody>
   
-  {allnames.map((row)=>{
+  {allnames?.map((row)=>{
      return <tr key={row.id}>
           <td key={row.fname}>{row.fname}</td>
           <td key={row.lname}>{row.lname}</td>

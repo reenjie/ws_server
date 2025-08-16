@@ -31,56 +31,11 @@ const getUniqueID= ()=>{
 wss.on('connection',function connection(ws){
        
         var user = getUniqueID(); 
-       /*  var user = ws.protocol; */
-    /*     console.log((new Date()) + 'Received a new Connection ');
-        console.log(user);
-      
-           
-                if(clients[user]){
-                        console.log(user +' :: Reconnected');
-                        clients[user]=ws;
-                 }else {
-                        clients[user]=ws;
-                        console.log('connected : '+user+' || '+Object.getOwnPropertyNames(clients) );
-                 } */
                  clients[user]=ws;
         
  
 ws.on('message', function(message){
-
-             
                 console.log('Message : %s',message,'|| From:  ' ,user);    
-
-            
-
-                for (key in clients){
-
-
-                        if(key == user){
-                        // The requestor ID... 
-                              
-                        }else{
-                              /*   const sendtimer =  setTimeout(()=>{
-                              var sqlStatement = "Select * from names";
-                                db.query(sqlStatement,(err,results)=>{                                 
-                                
-                                               clients[key].send(JSON.stringify(results));  
-                                           
-                                       
-                                });
-
-                                clearInterval(sendtimer);
-                                        },500); */
-                              
-                             
-                            clients[key].send(message);
-                        }
-
-                     
-                     
-                 
-                }
-   
 });
 
 });
@@ -101,11 +56,11 @@ app.post("/saving",(req,res)=>{
 
 /** Displaying Data */
 app.get("/view",(req,res)=>{
-
-        const sqlStatement = "Select * from names";
-        db.query(sqlStatement,(err,result)=>{
-            res.send(result);
-        });
+        res.send('Hello World');
+        // const sqlStatement = "Select * from names";
+        // db.query(sqlStatement,(err,result)=>{
+        //     res.send(result);
+        // });
 })
 
 /** Deleting Data */
@@ -135,7 +90,7 @@ app.post("/update",(req,res)=>{
 
 
 app.get("/",(req , res)=>{
-    
+    res.send('Hello World');
        
 })
 
