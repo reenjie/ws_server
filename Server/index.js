@@ -1,101 +1,49 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+const WebSocket = require("ws");
 
+const wss = new WebSocket.Server({ port: 3001 });
 
+// rooms = { roomId: Set(sockets) }
+const rooms = {};
 
-const app = express();
-const server = require('http').createServer(app);
-const mysql = require('mysql');
-const WebSocket = require('ws');
+wss.on("connection", (ws) => {
+  console.log("New client connected");
 
-/** Db connection */
-const db = mysql.createPool({
-        host: 'localhost',
-        user: 'root',
-        password : '',
-        database : 'test',
-})
-app.use(bodyParser.urlencoded({extended:true}));
-app.use(express.json());
-app.use(cors());
+  ws.on("message", (data) => {
+    try {
+      const msg = JSON.parse(data);
 
+      if (msg.type === "join") {
+        const roomId = msg.room;
+        if (!rooms[roomId]) rooms[roomId] = new Set();
+        rooms[roomId].add(ws);
+        ws.roomId = roomId; // remember which room this client joined
+        console.log(`Client joined room ${roomId}`);
+      }
 
-const wss = new WebSocket.Server({server:server});
+      if (msg.type === "chat") {
+        const roomId = ws.roomId;
+        if (!roomId) return;
+        const payload = JSON.stringify({ from: msg.from, text: msg.text });
 
-const clients = {};
-const getUniqueID= ()=>{
-        const s4 = () => Math.floor((1+Math.random())*0x10000).toString(16).substring(1);
-        return s4()+s4() +'-'+s4();
-}
-wss.on('connection',function connection(ws){
-       
-        var user = getUniqueID(); 
-                 clients[user]=ws;
-        
- 
-ws.on('message', function(message){
-                console.log('Message : %s',message,'|| From:  ' ,user);    
+        // broadcast only to the same room
+        rooms[roomId].forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(payload);
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Invalid message:", data);
+    }
+  });
+
+  ws.on("close", () => {
+    const roomId = ws.roomId;
+    if (roomId && rooms[roomId]) {
+      rooms[roomId].delete(ws);
+      if (rooms[roomId].size === 0) delete rooms[roomId]; // cleanup empty room
+    }
+    console.log("Client disconnected");
+  });
 });
-
-});
-
-
-
-
-/**Creating Names and save it to DB. */
-app.post("/saving",(req,res)=>{
-        const fname = req.body.fname;
-        const lname = req.body.lname;
-
-        const sqlStatement = "Insert into names (fname,lname) Values(?,?)";
-        db.query(sqlStatement,[fname,lname],(err,result)=>{
-            res.send('It is Inserted');
-        });
-})
-
-/** Displaying Data */
-app.get("/view",(req,res)=>{
-        res.send('Hello World');
-        // const sqlStatement = "Select * from names";
-        // db.query(sqlStatement,(err,result)=>{
-        //     res.send(result);
-        // });
-})
-
-/** Deleting Data */
-app.get("/delete/:id",(req,res)=>{
-        const id = req.params.id;
-        const sqlStatement = "DELETE FROM names WHERE id = ? ";
-        db.query(sqlStatement,id,(err,result)=>{
-       if(err) console.log(err);
-        });
-
-})
-
-/**Updating Data */
-
-app.post("/update",(req,res)=>{
-        const fname = req.body.fname;
-        const lname = req.body.lname;
-        const id = req.body.id;
-
-        const sqlStatement = "UPDATE `names` SET `fname`=?,`lname`=? WHERE id = ?";
-        db.query(sqlStatement,[fname,lname,id],(err,result)=>{
-            res.send('It is Inserted');
-        });
-
-})
-
-
-
-app.get("/",(req , res)=>{
-    res.send('Hello World');
-       
-})
-
-server.listen(3001,()=>console.log('listening on port 3001'))
-//app.listen(3001,()=>{
-  
-//})
 
