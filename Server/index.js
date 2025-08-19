@@ -5,6 +5,17 @@ const wss = new WebSocket.Server({ port: 3001 });
 // rooms = { roomId: Set(sockets) }
 const rooms = {};
 
+function broadCastToAllChannels(ws,data){
+  const roomId = ws.roomId;
+  if (!roomId) return;
+ 
+  rooms[roomId].forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(data);
+    }
+  });
+}
+
 wss.on("connection", (ws) => {
   console.log("New client connected");
 
@@ -21,21 +32,28 @@ wss.on("connection", (ws) => {
       }
 
       if (msg.type === "chat") {
-        const roomId = ws.roomId;
-        if (!roomId) return;
-        const payload = JSON.stringify({ from: msg.from, text: msg.text });
+        const data = JSON.stringify({ from: msg.from, text: msg.text });
+        broadCastToAllChannels(ws,data);
+      } 
 
-        // broadcast only to the same room
-        rooms[roomId].forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(payload);
-          }
-        });
+      if(msg.type === "typing"){
+        console.log(`${msg.from} is typing...`)
+        const data = JSON.stringify({ userTyping:msg.from });
+        broadCastToAllChannels(ws,data);
       }
+      if(msg.type === "done-typing"){
+        console.log(`${msg.from} stopped typing...`)
+
+        const data = JSON.stringify({ userTyping:-1 });
+        broadCastToAllChannels(ws,data);
+      }
+
     } catch (err) {
       console.error("Invalid message:", data);
     }
   });
+
+
 
   ws.on("close", () => {
     const roomId = ws.roomId;
